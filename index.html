@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+  <meta name="format-detection" content="telephone=no"/>
+  <title>下拉界面</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .chat {
+      width: 100%;
+      height: 100%;
+      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+
+    .chat-content {
+      position: absolute;
+      padding: 15px 15px 0 15px;
+      width: 100%;
+      height: 93%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overflow-x: hidden;
+      box-sizing: border-box;
+      transform: translateY(-40px);
+    }
+
+    .logo {
+      height: 50px;
+      text-align: center;
+    }
+
+  </style>
+</head>
+<body>
+<div class="chat">
+  <div class="chat-content">
+    <div class="logo">我的名字</div>
+    <div>
+      把我往下拉：内容内容
+    </div>
+    <div>
+      把我往下拉：内容内容
+    </div>
+    <div>
+      把我往下拉：内容内容
+    </div>
+    <div>
+      把我往下拉：内容内容
+    </div>
+    <div>
+      把我往下拉：内容内容
+    </div>
+    <div>
+      把我往下拉：内容内容
+    </div>
+  </div>
+</div>
+</body>
+
+<script>
+  (function (root, calback) {
+    root.MyScroll = calback();
+  })(this, function () {
+
+    function warn(text) {
+      console.error(text);
+    }
+
+    function MyScroll(el,options) {
+
+    if(typeof el !== "string"){
+      warn("请绑定目标元素!");
+    }
+
+      //默认config
+     this.options = {
+        startY: -40,
+      };
+
+      //事件收集
+      this.events = {};
+
+      //判断是不是一个对象
+      function isPlainObject(obj) {
+        return Object.prototype.toString.call(obj) === "[object Object]";
+      }
+
+      //合并对象
+      function mergeFn(target, opt) {
+        if (opt && isPlainObject(opt)) {
+
+          for (var key in opt) {
+            this.options[key] = opt[key]
+          }
+        }
+      }
+
+        mergeFn(this.options, options);
+        this.$el = document.querySelector(el);
+
+      this.$el.addEventListener("touchstart", this._touchstart.bind(this), false);
+      this.$el.addEventListener("touchmove", this._touchmove.bind(this), {passive: false})
+      this.$el.addEventListener("touchend", this._touchEnd.bind(this), false)
+    }
+
+    MyScroll.prototype = {
+
+      _touchstart : function (event) {
+        //开始触发
+        var ts = "transform 0.2s";
+        this.$touchStartY = event.changedTouches[0].pageY;
+        this.$el.style.transition = ts;
+        this.$el.style.webkitTransition = ts;
+
+        this._execEvents("scrollStart");
+      },
+      _touchmove: function (event) {
+
+        var $touchMoveY = event.changedTouches[0].pageY,
+          $moveHeight = $touchMoveY - this.$touchStartY;
+        //在顶部
+        if ($moveHeight > 0 && this.$el.scrollTop <= 0) {
+          if ($moveHeight < 60) {
+            //页面往下移动
+            var tf = "translate3d(0," + $moveHeight + "px,0)";
+            this.$el.style.transform = tf;
+            this.$el.style.webkitTransform = tf;
+
+            this._execEvents("scroll");
+          }
+
+          //在微信浏览器禁页面下拉
+          event.preventDefault()
+
+        }
+
+        //在底部
+        var toBottom = this.$el.scrollHeight - this.$el.clientHeight - this.$el.scrollTop
+        if ($moveHeight < 0 && toBottom <= 0) {
+          event.preventDefault()
+        }
+      },
+      _touchEnd: function () {
+
+        //页面回到顶部
+        var tt = "transform 0.3s easeInOut 0.3s", tf = "translate3d(0," + this.options.startY + "px,0)";
+        this.$el.style.transition = tt;
+        this.$el.style.webkitTransition = tt;
+        this.$el.style.transform = tf;
+        this.$el.style.webkitTransform = tf;
+
+        this._execEvents("scrollEnd");
+      },
+      _execEvents:function(type){
+
+
+        if(!this.events[type]){
+          return;
+        }
+
+
+        var i = 0,
+            l = this.events[type].length;
+        while (!l){
+          return;
+        }
+
+        for ( ; i<l;i++){
+            this.events[type][i].apply(this)
+        }
+      },
+      on:function (type,callback) {
+        if(!this.events[type]){
+          this.events[type] = [];
+        }
+        this.events[type].push(callback)
+      }
+    }
+
+
+    return MyScroll;
+  })
+
+  var myScroll = new MyScroll(".chat-content",{
+
+  })
+
+  myScroll.on("scrollEnd",function () {
+    console.log(this)
+    console.log("scrollStart")
+  })
+
+  console.log(myScroll)
+
+
+</script>
+</html>
